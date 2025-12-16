@@ -1,0 +1,65 @@
+[Main.WeaponDatas.weapon_ak47]
+Clip = 1337
+Ammo = 1337
+Damage = "=1"
+
+[Main.WeaponDatas.weapon_deagle]
+ReloadAfterShoot = true
+Damage = "=5000" 
+
+[Main.WeaponDatas.weapon_glock]
+BlockUsing = true
+
+[Main.WeaponDatas.weapon_p250]
+BlockUsing = true
+IgnorePickUpFromBlockUsing = false
+
+[Main.WeaponDatas.weapon_awp]
+UnlimitedAmmo = true
+Damage = "-50"
+
+[Main.WeaponDatas.weapon_m4a1]
+UnlimitedClip = true
+Damage = "*0"
+
+[Main.WeaponDatas.weapon_usp_silencer]
+OnlyHeadshot = true
+
+[Main.WeaponDatas.weapon_negev]
+AdminFlagsToIgnoreBlockUsing = ["admin"]
+
+[Main.WeaponDatas.weapon_ssg08]
+WeaponQuota = { 1 = 0, 5 = 1 }
+[Main.WeaponDatas.weapon_ssg08.MapSpecificQuota.de_dust2]
+1 = 1
+
+# Supported datas
+
+# [Main.WeaponDatas.<weaponname>]
+# Clip - (int) Sets weapon clip size
+# Ammo - (int) Sets reserve ammo amount
+# BlockUsing - (bool) Block weapon usage completely
+# IgnorePickUpFromBlockUsing - (bool) Allows picking up the weapon even if usage is blocked
+# ReloadAfterShoot - (bool) Automatically reloads the weapon after each shot
+# UnlimitedAmmo - (bool) Enables unlimited reserve ammo
+# UnlimitedClip - (bool) Enables unlimited clip (bottomless clip)
+# OnlyHeadshot - (bool) Restricts damage to headshots only
+# AdminFlagsToIgnoreBlockUsing - (list) Admin flags that bypass usage restrictions (e.g. ["rootperm", "admin"])
+# Damage - (string) The weapon's damage value or calculation formula. MUST start with an operator.
+#   Allowed operators: 
+#     "100" -> Fixed damage
+#     "*2"  -> Multiply damage
+#     "/2"  -> Divide damage
+#     "+10" -> Add damage
+#     "-10" -> Reduce damage
+
+# WeaponQuota - (dict) Defines weapon limits based on player count
+#   Format: { min_players = allowed_amount }
+#   Example: { 0 = 1, 5 = 2, 10 = 3 } 
+#   Logic: 0-4 players => 1 drop, 5-9 players => 2 drops, 10+ players => 3 drops
+
+# [Main.WeaponDatas.<weapon_name>.MapSpecificQuota.<map_name>]
+#   <min_players> = <allowed_amount>
+#   Example:
+#   [Main.WeaponDatas.weapon_ak47.MapSpecificQuota.de_dust2]
+#   1 = 1  (Overrides global quota specifically for de_dust2)
