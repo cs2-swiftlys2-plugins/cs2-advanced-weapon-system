@@ -4,6 +4,7 @@ using SwiftlyS2.Shared;
 using SwiftlyS2.Shared.Events;
 using SwiftlyS2.Shared.GameEventDefinitions;
 using SwiftlyS2.Shared.GameEvents;
+using SwiftlyS2.Shared.GameHooks;
 using SwiftlyS2.Shared.Misc;
 using SwiftlyS2.Shared.Natives;
 using SwiftlyS2.Shared.Players;
@@ -41,10 +42,15 @@ public sealed class AdvancedWeaponSystem(ISwiftlyCore core) : BasePlugin(core)
 
         ConfigMonitor = services.BuildServiceProvider()
             .GetRequiredService<IOptionsMonitor<Config>>();
+
+        Core.GameHooks.Entities.TakeDamage.Pre += OnEntityTakeDamage;
+        Core.GameHooks.Items.CanAcquire.Pre += OnItemCanAcquire;
     }
 
     public override void Unload()
     {
+        Core.GameHooks.Entities.TakeDamage.Pre -= OnEntityTakeDamage;
+        Core.GameHooks.Items.CanAcquire.Pre -= OnItemCanAcquire;
     }
 
     [GameEventHandler(HookMode.Post)]
@@ -103,15 +109,14 @@ public sealed class AdvancedWeaponSystem(ISwiftlyCore core) : BasePlugin(core)
             weaponVData.PrimaryReserveAmmoMax = weaponData.Ammo.Value;
     }
 
-    [EventListener<EventDelegates.OnEntityTakeDamage>]
-    public void OnEntityTakeDamageEvent(IOnEntityTakeDamageEvent @event)
+    private void OnEntityTakeDamage(ref TakeDamageEntityPreContext ctx)
     {
-        var player = @event.Entity;
+        var player = ctx.Params.Entity;
         if (player.DesignerName is not "player")
             return;
 
-        CTakeDamageInfo info = @event.Info;
-        var weapon = @event.Info.Ability.Value;
+        ref CTakeDamageInfo info = ref ctx.Params.Info;
+        var weapon = info.Ability.Value;
         if (weapon == null)
             return;
 
@@ -120,7 +125,7 @@ public sealed class AdvancedWeaponSystem(ISwiftlyCore core) : BasePlugin(core)
 
         if (weaponData.OnlyHeadshot == true && info.ActualHitGroup != HitGroup_t.HITGROUP_HEAD)
         {
-            @event.Result = HookResult.Stop;
+            ctx.SetHookResult(HookResult.Stop);
             return;
         }
 
@@ -143,37 +148,30 @@ public sealed class AdvancedWeaponSystem(ISwiftlyCore core) : BasePlugin(core)
             _ => oldDamage
         };
 
-        @event.Info.Damage = newDamage;
-        @event.Info.DamageCustom = (uint)newDamage;
-        @event.Info.OriginalDamage = newDamage;
-        @event.Info.TotalledDamage = newDamage;
+        info.Damage = newDamage;
+        info.DamageCustom = (uint)newDamage;
+        info.OriginalDamage = newDamage;
+        info.TotalledDamage = newDamage;
     }
 
-    [EventListener<EventDelegates.OnItemServicesCanAcquireHook>]
-    public void OnItemServicesCanAcquireHook(IOnItemServicesCanAcquireHookEvent @event)
+    private void OnItemCanAcquire(ref CanAcquireItemPreContext ctx)
     {
-        if (Core.Helpers.GetClassnameByDefinitionIndex(@event.EconItemView.ItemDefinitionIndex) is not { } weaponName)
+        if (ctx.Params.Player is not { } player)
+            return;
+
+        if (Core.Helpers.GetClassnameByDefinitionIndex(ctx.Params.EconItemView.ItemDefinitionIndex) is not { } weaponName)
             return;
 
         if (!ConfigMonitor.CurrentValue.WeaponDatas.TryGetValue(weaponName, out WeaponData? weaponData))
             return;
 
-        if (@event.ItemServices.Pawn.As<CCSPlayerPawn>().OriginalController.Value?.Index is not uint index)
-            return;
-
-        int playerSlot = (int)index - 1;
-        if (playerSlot < 0)
-            return;
-
-        if (Core.PlayerManager.GetPlayer(playerSlot) is not { } player)
-            return;
-
-        if (!Weapon.IsRestricted(player, weaponName, weaponData, @event.AcquireMethod))
+        if (!Weapon.IsRestricted(player, weaponName, weaponData, ctx.Params.AcquireMethod))
             return;
 
         if (!player.IsFakeClient)
             player.SendAlert(Instance.Translation.GetPlayerLocalizer(player)["You cannot use this weapon", weaponName]);
 
-        @event.SetAcquireResult(AcquireResult.NotAllowedByProhibition);
+        ctx.SetReturn(AcquireResult.NotAllowedByProhibition);
+        ctx.SetHookResult(HookResult.Stop);
     }
 }
