@@ -1,5 +1,4 @@
-﻿using Mono.Cecil.Cil;
-using SwiftlyS2.Shared;
+﻿using SwiftlyS2.Shared;
 using SwiftlyS2.Shared.Helpers;
 using SwiftlyS2.Shared.Misc;
 using SwiftlyS2.Shared.Natives;
